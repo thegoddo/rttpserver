@@ -1,20 +1,28 @@
+use rttpserver::ThreadPool;
 use std::{
     fs,
-    io::{BufRead, BufReader, prelude::*},
+    io::{BufReader, prelude::*},
     net::{TcpListener, TcpStream},
     thread,
     time::Duration,
 };
 
+// ANCHOR: here
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
 
-    for stream in listener.incoming() {
+    for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
 
-        handle_connection(stream);
+        pool.execute(|| {
+            handle_connection(stream);
+        });
     }
+
+    println!("Shutting down.");
 }
+// ANCHOR_END: here
 
 fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&stream);
